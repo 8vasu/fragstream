@@ -1,4 +1,4 @@
-# Shader renderer
+# fragstream
 
 Runs a Shadertoy style fragment shader on the GPU: live in a browser, or without a display to an image, a video or timings.
 Needs Docker with the NVIDIA container toolkit.

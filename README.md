@@ -6,8 +6,8 @@ Needs Docker with the NVIDIA container toolkit.
 ## Quick start
 
 ```sh
-make build
-./stream.sh sponge.frag 480x270
+$ make build
+$ ./stream.sh sponge.frag 480x270
 ```
 
 `stream.sh` takes a shader and a frame size, prints the address of a live page, and serves it until Ctrl-C.
@@ -17,18 +17,15 @@ and a size in the address, such as `?size=640x360`, overrides the one given.
 To open the page in the browser as soon as the server is up, pipe the address to it:
 
 ```sh
-./stream.sh sponge.frag 640x360 | xargs -n1 chromium
-./stream.sh sponge.frag 1920x1080 | xargs -n1 chromium
+$ ./stream.sh sponge.frag 640x360 | xargs -n1 chromium
+$ ./stream.sh sponge.frag 1920x1080 | xargs -n1 chromium
 ```
 
-A short [demo video](demo.mp4) shows it running.
-
-The image is named after this folder.
-
+![the sponge shader running live in a browser](demo.gif)
 ## Check the GPU
 
 ```sh
-make gpu
+$ make gpu
 ```
 
 It lists the GPUs the container can use. A software device here (llvmpipe, lavapipe) means the GPU is not used.
@@ -36,15 +33,15 @@ It lists the GPUs the container can use. A software device here (llvmpipe, lavap
 ## Test
 
 ```sh
-make run ARGS="sponge.frag --bench 300 --out-res 854x480"   # milliseconds per frame
-make run ARGS="sponge.frag --out-file out/a.png --at 3"     # one frame, written to out/a.png in this folder
+$ make run ARGS="sponge.frag --bench 300 --out-res 854x480"   # milliseconds per frame
+$ make run ARGS="sponge.frag --out-file out/a.png --at 3"     # one frame, written to out/a.png in this folder
 ```
 
 ## Use
 
 ```sh
-make run ARGS="SHADER [options]"
-make help
+$ make run ARGS="SHADER [options]"
+$ make help
 ```
 
 Serving live is the default, and `stream.sh` is its short form with a free port picked for you. `--out-file` writes an image
@@ -52,7 +49,7 @@ Serving live is the default, and `stream.sh` is its short form with a free port 
 A shader kept elsewhere needs a mount for `make run`:
 
 ```sh
-make run EXTRA="-v $HOME/shaders:/shaders:ro" ARGS="/shaders/a.frag"
+$ make run EXTRA="-v $HOME/shaders:/shaders:ro" ARGS="/shaders/a.frag"
 ```
 
 `stream.sh` mounts the shader's folder itself, so it takes a shader from anywhere, as long as the path has no spaces.

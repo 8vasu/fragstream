@@ -1,0 +1,104 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>live shader</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #8f8; font: 12px monospace; }
+  canvas { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+  #status { position: fixed; top: 4px; left: 6px; white-space: pre-wrap; }
+</style>
+<canvas></canvas>
+<div id="status"></div>
+<script>
+// --- names -----------------------------------------------------------------
+const SHADER_URL = "shader";   // routes of the server: the shader file it was given, and the frame size it was given
+const SIZE_URL = "size";
+const SIZE_PARAM = "size";     // a size in the address overrides the server's, e.g. ?size=480x270
+const SIZE_SEP = "x";
+const REPORT_MS = 500;
+const MS = 1000;
+
+// --- the Shadertoy interface around the shader -----------------------------
+const VERTEX = `#version 300 es
+void main() {
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+const HEADER = `#version 300 es
+precision highp float;
+uniform vec3 iResolution;
+uniform float iTime;
+uniform int iFrame;
+out vec4 outColor;
+`;
+const FOOTER = `
+void main() { mainImage(outColor, gl_FragCoord.xy); }`;
+const VERTICES = 3;
+
+const canvas = document.querySelector("canvas");
+const status = document.querySelector("#status");
+const gl = canvas.getContext("webgl2");
+
+async function frameSize() {
+  const text = new URLSearchParams(location.search).get(SIZE_PARAM) || await (await fetch(SIZE_URL)).text();
+
+  return text.split(SIZE_SEP).map(Number);
+}
+
+function compile(type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(shader));
+  }
+
+  return shader;
+}
+
+function link(vertexSource, fragmentSource) {
+  const program = gl.createProgram();
+  gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
+  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    throw new Error(gl.getProgramInfoLog(program));
+  }
+
+  return program;
+}
+
+async function main() {
+  const [width, height] = await frameSize();
+  canvas.width = width;
+  canvas.height = height;
+
+  // the shader file is the single source of the picture
+  const source = await (await fetch(SHADER_URL)).text();
+  const program = link(VERTEX, HEADER + source + FOOTER);
+  gl.useProgram(program);
+  gl.viewport(0, 0, width, height);
+  gl.uniform3f(gl.getUniformLocation(program, "iResolution"), width, height, 1);
+  const time = gl.getUniformLocation(program, "iTime");
+  const frame = gl.getUniformLocation(program, "iFrame");
+
+  // draw as fast as the display allows and report the rate
+  const began = performance.now();
+  let frames = 0, reported = began, since = 0;
+  function draw(now) {
+    gl.uniform1f(time, (now - began) / MS);
+    gl.uniform1i(frame, frames);
+    gl.drawArrays(gl.TRIANGLES, 0, VERTICES);
+    frames++;
+    since++;
+    if (now - reported >= REPORT_MS) {
+      status.textContent = `${width}${SIZE_SEP}${height}  ${(since * MS / (now - reported)).toFixed(1)} fps`;
+      reported = now;
+      since = 0;
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+main().catch(error => { status.textContent = error.message; });
+</script>

@@ -1,0 +1,2 @@
+fragstream - Run a Shadertoy style fragment shader: serve it live to a browser, or render it without a display to an image, a video or timings
+Copyright (C) 2026 Soumendra Ganguly

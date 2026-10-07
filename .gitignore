@@ -1,0 +1,2 @@
+# where the container writes the images and videos asked for, in the mounted folder
+out/
